@@ -1,3 +1,5 @@
 {
-  "dir": "E:/ordFiles"
+  "dir": "D:/ordFiles",
+  "ip": [],
+  "url": "http://127.0.0.1:4545/okkam/files"
 }

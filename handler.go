@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -22,12 +23,36 @@ var ipLimitGLB = ipLimiter{
 
 type settingsType struct {
 	Dir string `json:"dir"`
+	Ip  ipList `json:"ip"`
+	Url string `json:"url"`
+}
+
+func (s *settingsType) getFileDir() string {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	return s.Dir
+}
+
+func (s *settingsType) getIPs() ipList {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	return s.Ip
+}
+
+func (s *settingsType) getURL() string {
+	mu.RLock()
+	defer mu.RUnlock()
+
+	return s.Url
 }
 
 var (
 	absPath  string
 	logFile  *os.File
 	settings settingsType
+	mu       sync.RWMutex
 )
 
 type ipLimiter struct {
@@ -63,6 +88,10 @@ type errResp struct {
 	Error string `json:"error"`
 }
 
+type jsonResponse struct {
+	Url string `json:"url"`
+}
+
 func readSettings() error {
 	var (
 		file     *os.File
@@ -72,6 +101,9 @@ func readSettings() error {
 	jsonFile := filepath.Join(absPath, "settings.json")
 	if l, errInfo := os.Stat(jsonFile); !(errInfo == nil && !l.IsDir()) {
 		settings.Dir = "C:/ordFiles"
+		settings.Ip = make(ipList, 0)
+		settings.Url = "http://127.0.0.1/okkam/files"
+
 		jsonData, err = json.MarshalIndent(settings, "", "  ")
 		if err != nil {
 			return err
@@ -139,8 +171,8 @@ func openLogFile(path string) (*os.File, error) {
 	return lFile, nil
 }
 
-func sendResponse(w *http.ResponseWriter, eR any) {
-	err := json.NewEncoder(*w).Encode(eR)
+func sendResponse(w *http.ResponseWriter, jsonData any) {
+	err := json.NewEncoder(*w).Encode(jsonData)
 	if err != nil {
 		_, err = fmt.Fprint(*w, err.Error())
 		fmt.Println(err.Error())
@@ -159,16 +191,13 @@ func getRequestError(r *http.Request) (*errResp, error) {
 		return &eR, nil
 	}
 
-	var ips = ipList{
-		"127.0.0.1",
-		"localhost",
-		"::1"}
+	ips := settings.getIPs()
 
 	ip, _, err = net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		eR.Error = err.Error()
 		return &eR, nil
-	} else if !ips.contains(ip) {
+	} else if len(ips) > 0 && !ips.contains(ip) {
 		eR.Error = fmt.Sprintf("IP is not allowed: %v", ip)
 		return &eR, nil
 	}
@@ -191,7 +220,7 @@ func getRequestError(r *http.Request) (*errResp, error) {
 	return nil, nil
 }
 
-func readRequest(r *http.Request) error {
+func readRequest(w *http.ResponseWriter, r *http.Request) error {
 	var (
 		body []byte
 		err  error
@@ -203,17 +232,19 @@ func readRequest(r *http.Request) error {
 		return err
 	}
 
+	filePth := settings.getFileDir()
+
 	if dirList, ok := r.Header["Dir"]; ok && len(dirList) > 0 {
-		dirPath := filepath.Join(absPath, dirList[0])
+		dirPath := filepath.Join(filePth, dirList[0])
 		if l, errDir := os.Stat(dirPath); !(errDir == nil && l.IsDir()) {
-			errDir = os.Mkdir(dirPath, 777)
+			errDir = os.MkdirAll(dirPath, 777)
 			if errDir != nil {
 				return errDir
 			}
 		}
 
 		if fileName, okFile := r.Header["Filename"]; okFile && len(fileName) > 0 {
-			filePath := filepath.Join(absPath, dirList[0], fileName[0])
+			filePath := filepath.Join(filePth, dirList[0], fileName[0])
 			file, err = os.Create(filePath)
 			if err != nil {
 				return err
@@ -228,6 +259,8 @@ func readRequest(r *http.Request) error {
 			if err != nil {
 				return err
 			}
+			jsonData := jsonResponse{Url: fmt.Sprint(settings.getURL(), "/", dirList[0], "/", fileName[0])}
+			sendResponse(w, &jsonData)
 		}
 
 	} else {
@@ -252,10 +285,12 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 		err = errors.New(eR.Error)
 		loggMessage(&err)
 	} else {
-		err = readRequest(r)
+		err = readRequest(&w, r)
 		if err != nil {
 			loggMessage(&err)
-			sendResponse(&w, err.Error())
+			eR = new(errResp)
+			eR.Error = err.Error()
+			sendResponse(&w, &eR)
 			if _, err = fmt.Fprint(w, err.Error()); err != nil {
 				loggMessage(&err)
 			}
@@ -263,8 +298,11 @@ func requestHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func requestHandlerGet(w http.ResponseWriter, r *http.Request) {
-	_, _ = w, r
+func requestHandlerOpen(w http.ResponseWriter, r *http.Request) {
+	rURL := strings.Replace(r.RequestURI, "/okkam/files/", "", -1)
+	filePath := filepath.Join(settings.getFileDir(), rURL)
+	//w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filepath.Base(filePath)))
+	http.ServeFile(w, r, filePath)
 }
 
 func main() {
@@ -296,8 +334,12 @@ func main() {
 		os.Exit(0)
 	}(logFile)
 
-	http.HandleFunc("/okkam/sendfile", requestHandler)
-	http.HandleFunc("/okkam/getfile", requestHandlerGet)
+	http.HandleFunc("/okkam/api/v1/sendfile", requestHandler)
+	http.Handle("/okkam/files/", http.StripPrefix("/okkam/files/", http.HandlerFunc(requestHandlerOpen)))
+
+	//http.Handle("/okkam/files/", http.StripPrefix("/okkam/files/",
+	//	http.FileServer(http.Dir(settings.getFileDir()))))
+
 	err = http.ListenAndServe(":4545", nil)
 	if err != nil {
 		loggMessage(&err)
