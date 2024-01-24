@@ -48,10 +48,10 @@ func (ipl *ipLimiter) getLimiter(ip string) *rate.Limiter {
 	return lim
 }
 
-type ipList [3]string
+type ipList []string
 
 func (l *ipList) contains(ip string) bool {
-	for _, i := range l {
+	for _, i := range *l {
 		if i == ip {
 			return true
 		}
@@ -79,7 +79,6 @@ func readSettings() error {
 
 		file, err = os.Create(jsonFile)
 		if err != nil {
-			log.Fatal(err)
 			return err
 		}
 		defer func() {
@@ -90,10 +89,17 @@ func readSettings() error {
 		}()
 		_, err = file.Write(jsonData)
 		if errInfo != nil {
-			log.Fatal(err)
 			return err
-		} else {
-			//jsonData, err = json.Unmarshal(jsonFile)
+		}
+	} else {
+		jsonData, err = os.ReadFile(jsonFile)
+		if errInfo != nil {
+			return err
+		}
+
+		err = json.Unmarshal(jsonData, &settings)
+		if errInfo != nil {
+			return err
 		}
 	}
 	return nil
