@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,6 +21,13 @@ const rateLimit = 20
 var ipLimitGLB = ipLimiter{
 	limiter: make(map[string]*rate.Limiter),
 }
+
+var (
+	absPath  string
+	logFile  *os.File
+	settings settingsType
+	mu       sync.RWMutex
+)
 
 type settingsType struct {
 	Dir string `json:"dir"`
@@ -47,13 +55,6 @@ func (s *settingsType) getURL() string {
 
 	return s.Url
 }
-
-var (
-	absPath  string
-	logFile  *os.File
-	settings settingsType
-	mu       sync.RWMutex
-)
 
 type ipLimiter struct {
 	limiter map[string]*rate.Limiter
@@ -244,7 +245,8 @@ func readRequest(w *http.ResponseWriter, r *http.Request) error {
 		}
 
 		if fileName, okFile := r.Header["Filename"]; okFile && len(fileName) > 0 {
-			filePath := filepath.Join(filePth, dirList[0], fileName[0])
+			allowedFileName := url.PathEscape(fileName[0])
+			filePath := filepath.Join(filePth, dirList[0], allowedFileName)
 			file, err = os.Create(filePath)
 			if err != nil {
 				return err
@@ -259,7 +261,7 @@ func readRequest(w *http.ResponseWriter, r *http.Request) error {
 			if err != nil {
 				return err
 			}
-			jsonData := jsonResponse{Url: fmt.Sprint(settings.getURL(), "/", dirList[0], "/", fileName[0])}
+			jsonData := jsonResponse{Url: fmt.Sprint(settings.getURL(), "/", dirList[0], "/", allowedFileName)}
 			sendResponse(w, &jsonData)
 		}
 
