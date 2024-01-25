@@ -11,9 +11,14 @@ Description=http Handler
 After=multi-user.target
 
 [Service]
-WorkingDirectory=/home/install/go/
-ExecStart=/home/install/go/httpHandler
+WorkingDirectory=/home/httpHandler/
+ExecStart=sudo /home/httpHandler/httpHandler
 
 [Install]
 WantedBy=multi-user.target
 Alias=httpHandler.service
+
+
+
+/home/httpHandler/httpHandler
+
