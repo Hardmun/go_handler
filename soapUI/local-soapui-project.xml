@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<con:soapui-project id="7881f3d2-f4fd-41cf-8371-7b7822943999" activeEnvironment="Default" name="local" resourceRoot=""
-                    soapui-version="5.7.0" abortOnError="false" runType="SEQUENTIAL"
-                    xmlns:con="http://eviware.com/soapui/config">
+<con:soapui-project id="7881f3d2-f4fd-41cf-8371-7b7822943999" activeEnvironment="Default" name="local" resourceRoot="" soapui-version="5.7.0" abortOnError="false" runType="SEQUENTIAL" xmlns:con="http://eviware.com/soapui/config">
     <con:settings/>
-    <con:interface xsi:type="con:RestService" id="12141d68-2e17-483b-8d4e-172a762aeb07"
-                   wadlVersion="http://wadl.dev.java.net/2009/02" name="" type="rest"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <con:interface xsi:type="con:RestService" id="12141d68-2e17-483b-8d4e-172a762aeb07" wadlVersion="http://wadl.dev.java.net/2009/02" name="" type="rest" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <con:settings/>
         <con:definitionCache/>
         <con:endpoints/>
@@ -349,8 +345,7 @@
                     <con:params/>
                     <con:element>data</con:element>
                 </con:representation>
-                <con:request name="Request 1" id="e7810b96-3558-4912-aa0f-4fb0d3947f5a" mediaType="application/json"
-                             postQueryString="false">
+                <con:request name="Request 1" id="e7810b96-3558-4912-aa0f-4fb0d3947f5a" mediaType="application/json" postQueryString="false">
                     <con:settings>
                         <con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;entry key="Dir"
                             value="123" xmlns="http://eviware.com/soapui/config"/>
@@ -708,12 +703,9 @@
                     <con:params/>
                     <con:element>data</con:element>
                 </con:representation>
-                <con:request name="Request 1" id="e7810b96-3558-4912-aa0f-4fb0d3947f5a" mediaType="application/json"
-                             postQueryString="false">
+                <con:representation type="RESPONSE"><con:mediaType xsi:nil="true"/><con:status>0</con:status><con:params/><con:element>data</con:element></con:representation><con:request name="Request 1" id="e7810b96-3558-4912-aa0f-4fb0d3947f5a" mediaType="application/json" postQueryString="false">
                     <con:settings>
-                        <con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;entry key="Dir"
-                            value="123" xmlns="http://eviware.com/soapui/config"/>
-                        </con:setting>
+                        <con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;entry key="Dir" value="123" xmlns="http://eviware.com/soapui/config"/></con:setting>
                     </con:settings>
                     <con:endpoint>http://ubnt:4545</con:endpoint>
                     <con:request/>
