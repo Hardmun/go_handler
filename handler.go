@@ -16,7 +16,10 @@ import (
 	"sync"
 )
 
-const rateLimit = 20
+const (
+	rateLimit = 20
+	httpPort  = "4545"
+)
 
 var ipLimitGLB = ipLimiter{
 	limiter: make(map[string]*rate.Limiter),
@@ -98,12 +101,17 @@ func readSettings() error {
 		file     *os.File
 		jsonData []byte
 		err      error
+		hostname string
 	)
 	jsonFile := filepath.Join(absPath, "settings.json")
 	if l, errInfo := os.Stat(jsonFile); !(errInfo == nil && !l.IsDir()) {
 		settings.Dir = filepath.Join(absPath, "files")
 		settings.Ip = make(ipList, 0)
-		settings.Url = "http://localhost/okkam/files"
+		hostname, err = os.Hostname()
+		if err != nil {
+			hostname = "localhost"
+		}
+		settings.Url = fmt.Sprint("http://", hostname, ":", httpPort, "/okkam/files")
 
 		jsonData, err = json.MarshalIndent(settings, "", "  ")
 		if err != nil {
@@ -342,7 +350,7 @@ func main() {
 	//http.Handle("/okkam/files/", http.StripPrefix("/okkam/files/",
 	//	http.FileServer(http.Dir(settings.getFileDir()))))
 
-	err = http.ListenAndServe(":4545", nil)
+	err = http.ListenAndServe(fmt.Sprint(":", httpPort), nil)
 	if err != nil {
 		loggMessage(&err)
 		log.Fatal(err)
