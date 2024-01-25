@@ -103,7 +103,7 @@ func readSettings() error {
 	if l, errInfo := os.Stat(jsonFile); !(errInfo == nil && !l.IsDir()) {
 		settings.Dir = filepath.Join(absPath, "files")
 		settings.Ip = make(ipList, 0)
-		settings.Url = "http://127.0.0.1/okkam/files"
+		settings.Url = "http://localhost/okkam/files"
 
 		jsonData, err = json.MarshalIndent(settings, "", "  ")
 		if err != nil {
