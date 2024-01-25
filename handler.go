@@ -101,7 +101,7 @@ func readSettings() error {
 	)
 	jsonFile := filepath.Join(absPath, "settings.json")
 	if l, errInfo := os.Stat(jsonFile); !(errInfo == nil && !l.IsDir()) {
-		settings.Dir = "C:/ordFiles"
+		settings.Dir = filepath.Join(absPath, "files")
 		settings.Ip = make(ipList, 0)
 		settings.Url = "http://127.0.0.1/okkam/files"
 
